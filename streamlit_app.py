@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date, datetime, time as dtime
+from datetime import date, time as dtime
 from pathlib import Path
 import calendar
 
@@ -54,22 +54,6 @@ st.markdown("""
     color: #111827;
     line-height: 1.0;
     white-space: nowrap;
-}
-
-@media (max-width: 768px) {
-    .stat-row {
-        gap: 4px;
-    }
-    .stat-box {
-        padding: 6px 2px;
-    }
-    .stat-label {
-        font-size: 0.56rem;
-        margin-bottom: 2px;
-    }
-    .stat-value {
-        font-size: 0.88rem;
-    }
 }
 
 .cal-wrap {
@@ -132,6 +116,42 @@ st.markdown("""
 }
 
 @media (max-width: 768px) {
+    .stat-row {
+        gap: 4px;
+    }
+    .stat-box {
+        padding: 6px 2px;
+    }
+    .stat-label {
+        font-size: 0.56rem;
+        margin-bottom: 2px;
+    }
+    .stat-value {
+        font-size: 0.88rem;
+    }
+
+    /* 모바일에서도 필터 컬럼이 한 줄 유지되도록 */
+    div[data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+        gap: 0.3rem !important;
+    }
+    div[data-testid="column"] {
+        min-width: 0 !important;
+    }
+
+    /* 필터/입력창 글자 크기 */
+    label p {
+        font-size: 0.68rem !important;
+        line-height: 1.0 !important;
+    }
+    div[data-baseweb="select"] > div {
+        font-size: 0.72rem !important;
+        min-height: 2.25rem !important;
+    }
+    input {
+        font-size: 0.72rem !important;
+    }
+
     .cal-table th {
         font-size: 0.68rem;
         padding: 4px 0;

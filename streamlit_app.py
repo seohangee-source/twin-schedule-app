@@ -16,13 +16,12 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "twin_schedule.db"
 
 CATEGORY_OPTIONS = [
-    "일정",
+    "가족행사",
+    "어린이집 및 유치원",
     "병원",
-    "어린이집",
-    "유치원",
-    "체험행사",
-    "수유리행사",
-    "가족"
+    "진월일정",
+    "수유리일정",
+    "기타 일정"
 ]
 
 st.markdown("""
@@ -102,17 +101,29 @@ st.markdown("""
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.cal-item-child1 {
+.cal-item-family {
     background: #ffe4ec;
     color: #9f1239;
 }
-.cal-item-child2 {
-    background: #dbeafe;
-    color: #1d4ed8;
+.cal-item-school {
+    background: #e0f2fe;
+    color: #075985;
 }
-.cal-item-common {
+.cal-item-hospital {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+.cal-item-jinwol {
     background: #dcfce7;
     color: #166534;
+}
+.cal-item-suyuri {
+    background: #fef3c7;
+    color: #92400e;
+}
+.cal-item-etc {
+    background: #e5e7eb;
+    color: #374151;
 }
 
 @media (max-width: 768px) {
@@ -130,7 +141,6 @@ st.markdown("""
         font-size: 0.88rem;
     }
 
-    /* 모바일에서도 필터 컬럼이 한 줄 유지되도록 */
     div[data-testid="stHorizontalBlock"] {
         flex-wrap: nowrap !important;
         gap: 0.3rem !important;
@@ -139,7 +149,6 @@ st.markdown("""
         min-width: 0 !important;
     }
 
-    /* 필터/입력창 글자 크기 */
     label p {
         font-size: 0.68rem !important;
         line-height: 1.0 !important;
@@ -207,6 +216,22 @@ def init_db():
 
     ensure_column(cur, "schedules", "category", "TEXT")
     ensure_column(cur, "schedules", "status", "TEXT", "DEFAULT '예정'")
+
+    # 기존 데이터 통합/정리
+    cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='어린이집'")
+    cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='유치원'")
+
+    cur.execute("UPDATE schedules SET category='진월일정' WHERE category='체험행사'")
+    cur.execute("UPDATE schedules SET category='진월일정' WHERE category='지원행사'")
+    cur.execute("UPDATE schedules SET category='진월일정' WHERE category='진월행사'")
+    cur.execute("UPDATE schedules SET category='진월일정' WHERE category='진월 행사'")
+
+    cur.execute("UPDATE schedules SET category='수유리일정' WHERE category='수유리행사'")
+    cur.execute("UPDATE schedules SET category='수유리일정' WHERE category='수류리행사'")
+    cur.execute("UPDATE schedules SET category='수유리일정' WHERE category='수유리 행사'")
+
+    cur.execute("UPDATE schedules SET category='가족행사' WHERE category='가족'")
+    cur.execute("UPDATE schedules SET category='기타 일정' WHERE category='일정'")
 
     conn.commit()
     conn.close()
@@ -306,6 +331,20 @@ def seed_if_empty():
     )
 
 
+def category_class(category: str) -> str:
+    if category == "가족행사":
+        return "cal-item cal-item-family"
+    if category == "어린이집 및 유치원":
+        return "cal-item cal-item-school"
+    if category == "병원":
+        return "cal-item cal-item-hospital"
+    if category == "진월일정":
+        return "cal-item cal-item-jinwol"
+    if category == "수유리일정":
+        return "cal-item cal-item-suyuri"
+    return "cal-item cal-item-etc"
+
+
 def render_mobile_calendar(df, month_input):
     year = month_input.year
     month = month_input.month
@@ -342,20 +381,13 @@ def render_mobile_calendar(df, month_input):
 
             items = item_map.get(d, [])
             for item in items[:2]:
-                twin = str(item.get("twin", "공통"))
-                if twin == "첫째":
-                    cls = "cal-item cal-item-child1"
-                elif twin == "둘째":
-                    cls = "cal-item cal-item-child2"
-                else:
-                    cls = "cal-item cal-item-common"
-
+                cls = category_class(str(item.get("category", "")))
                 title = str(item.get("title", ""))
                 time_txt = str(item.get("event_time", ""))
                 html.append(f"<div class='{cls}'>{time_txt} {title}</div>")
 
             if len(items) > 2:
-                html.append(f"<div class='cal-item'>+{len(items)-2}건</div>")
+                html.append(f"<div class='cal-item cal-item-etc'>+{len(items)-2}건</div>")
 
             html.append("</td>")
         html.append("</tr>")
@@ -395,16 +427,22 @@ def render_desktop_calendar(df, month_input):
 
                     items = item_map.get(d, [])
                     for item in items[:3]:
-                        twin = str(item.get("twin", "공통"))
+                        category = str(item.get("category", ""))
                         title = str(item.get("title", ""))
                         time_txt = str(item.get("event_time", ""))
 
-                        if twin == "첫째":
+                        if category == "가족행사":
                             st.caption(f"🩷 {time_txt} {title}")
-                        elif twin == "둘째":
+                        elif category == "어린이집 및 유치원":
                             st.caption(f"🩵 {time_txt} {title}")
-                        else:
+                        elif category == "병원":
+                            st.caption(f"💜 {time_txt} {title}")
+                        elif category == "진월일정":
                             st.caption(f"💚 {time_txt} {title}")
+                        elif category == "수유리일정":
+                            st.caption(f"🟨 {time_txt} {title}")
+                        else:
+                            st.caption(f"⬜ {time_txt} {title}")
 
                     if len(items) > 3:
                         st.caption(f"+{len(items)-3}건")

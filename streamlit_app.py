@@ -27,26 +27,128 @@ CATEGORY_OPTIONS = [
 
 st.markdown("""
 <style>
-[data-testid="stMetricValue"] {
-    font-size: 1.2rem;
-    line-height: 1.0;
+.stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+    margin-bottom: 12px;
 }
-[data-testid="stMetricLabel"] {
-    font-size: 0.85rem;
+.stat-box {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 6px;
+    text-align: center;
+    background: #ffffff;
+}
+.stat-label {
+    font-size: 0.78rem;
+    color: #4b5563;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+.stat-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #111827;
     line-height: 1.0;
+    white-space: nowrap;
 }
 
 @media (max-width: 768px) {
-    [data-testid="stMetricValue"] {
-        font-size: 0.82rem !important;
-        line-height: 1.0 !important;
+    .stat-row {
+        gap: 4px;
     }
-    [data-testid="stMetricLabel"] {
-        font-size: 0.52rem !important;
-        line-height: 1.0 !important;
+    .stat-box {
+        padding: 6px 2px;
     }
-    div[data-testid="metric-container"] {
-        padding: 4px 2px !important;
+    .stat-label {
+        font-size: 0.56rem;
+        margin-bottom: 2px;
+    }
+    .stat-value {
+        font-size: 0.88rem;
+    }
+}
+
+.cal-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+.cal-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    table-layout: fixed;
+}
+.cal-table th {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px 0;
+    color: #374151;
+}
+.cal-table td {
+    vertical-align: top;
+    height: 88px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 4px;
+}
+.cal-other {
+    background: #f9fafb !important;
+    color: #9ca3af;
+}
+.cal-day {
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.cal-item {
+    font-size: 0.62rem;
+    line-height: 1.2;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-radius: 6px;
+    padding: 2px 4px;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cal-item-child1 {
+    background: #ffe4ec;
+    color: #9f1239;
+}
+.cal-item-child2 {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.cal-item-common {
+    background: #dcfce7;
+    color: #166534;
+}
+
+@media (max-width: 768px) {
+    .cal-table th {
+        font-size: 0.68rem;
+        padding: 4px 0;
+    }
+    .cal-table td {
+        height: 64px;
+        padding: 3px;
+    }
+    .cal-day {
+        font-size: 0.66rem;
+        margin-bottom: 2px;
+    }
+    .cal-item {
+        font-size: 0.52rem;
+        padding: 1px 3px;
+        border-radius: 4px;
+        margin-bottom: 2px;
     }
 }
 </style>
@@ -176,90 +278,6 @@ def render_mobile_calendar(df, month_input):
             d = row["event_date_only"]
             item_map.setdefault(d, []).append(row)
 
-    st.markdown("""
-    <style>
-    .cal-wrap {
-        width: 100%;
-        overflow-x: auto;
-    }
-    .cal-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 4px;
-        table-layout: fixed;
-    }
-    .cal-table th {
-        font-size: 0.82rem;
-        font-weight: 700;
-        text-align: center;
-        padding: 6px 0;
-        color: #374151;
-    }
-    .cal-table td {
-        vertical-align: top;
-        height: 88px;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        background: #ffffff;
-        padding: 4px;
-    }
-    .cal-other {
-        background: #f9fafb !important;
-        color: #9ca3af;
-    }
-    .cal-day {
-        font-size: 0.78rem;
-        font-weight: 700;
-        margin-bottom: 4px;
-    }
-    .cal-item {
-        font-size: 0.62rem;
-        line-height: 1.2;
-        background: #eff6ff;
-        color: #1d4ed8;
-        border-radius: 6px;
-        padding: 2px 4px;
-        margin-bottom: 3px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    .cal-item-child1 {
-        background: #ffe4ec;
-        color: #9f1239;
-    }
-    .cal-item-child2 {
-        background: #dbeafe;
-        color: #1d4ed8;
-    }
-    .cal-item-common {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    @media (max-width: 768px) {
-        .cal-table th {
-            font-size: 0.68rem;
-            padding: 4px 0;
-        }
-        .cal-table td {
-            height: 64px;
-            padding: 3px;
-        }
-        .cal-day {
-            font-size: 0.66rem;
-            margin-bottom: 2px;
-        }
-        .cal-item {
-            font-size: 0.52rem;
-            padding: 1px 3px;
-            border-radius: 4px;
-            margin-bottom: 2px;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
     html = []
     html.append("<div class='cal-wrap'>")
     html.append("<table class='cal-table'>")
@@ -371,11 +389,29 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("전체", f"{total:02d}건")
-m2.metric("오늘", f"{today_count:02d}건")
-m3.metric("예정", f"{open_count:02d}건")
-m4.metric("완료", f"{done_count:02d}건")
+st.markdown(
+    f"""
+    <div class="stat-row">
+        <div class="stat-box">
+            <div class="stat-label">전체</div>
+            <div class="stat-value">{total:02d}건</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">오늘</div>
+            <div class="stat-value">{today_count:02d}건</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">예정</div>
+            <div class="stat-value">{open_count:02d}건</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">완료</div>
+            <div class="stat-value">{done_count:02d}건</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 with st.expander("빠른 일정 등록", expanded=True):
     with st.form("add_form", clear_on_submit=True):

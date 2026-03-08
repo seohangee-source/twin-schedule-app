@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date
+from datetime import date, datetime, time as dtime
 from pathlib import Path
 import calendar
 
@@ -231,11 +231,30 @@ def load_schedules():
 def update_status(schedule_id, status):
     conn = get_conn()
     cur = conn.cursor()
-
     cur.execute(
         "UPDATE schedules SET status=? WHERE id=?",
         (status, int(schedule_id))
     )
+    conn.commit()
+    conn.close()
+
+
+def update_schedule(schedule_id, title, category, d, t, memo):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+    UPDATE schedules
+    SET title=?, category=?, event_date=?, event_time=?, memo=?
+    WHERE id=?
+    """, (
+        title,
+        category,
+        str(d),
+        str(t)[:5],
+        memo,
+        int(schedule_id)
+    ))
 
     conn.commit()
     conn.close()
@@ -244,12 +263,10 @@ def update_status(schedule_id, status):
 def delete_schedule(schedule_id):
     conn = get_conn()
     cur = conn.cursor()
-
     cur.execute(
         "DELETE FROM schedules WHERE id=?",
         (int(schedule_id),)
     )
-
     conn.commit()
     conn.close()
 
@@ -259,7 +276,14 @@ def seed_if_empty():
     if not df.empty:
         return
 
-    add_schedule("첫째", "소아과 검진", "병원", date.today(), "10:30", "예방접종 수첩 챙기기")
+    add_schedule(
+        "첫째",
+        "소아과 검진",
+        "병원",
+        date.today(),
+        "10:30",
+        "예방접종 수첩 챙기기"
+    )
 
 
 def render_mobile_calendar(df, month_input):
@@ -451,19 +475,18 @@ with st.expander("빠른 일정 등록", expanded=True):
 
 st.divider()
 
-f1, f2, f3, f4 = st.columns([1, 1, 1, 1.4])
+col1, col2, col3 = st.columns(3)
 
-with f1:
-    twin_filter = st.selectbox("대상 필터", ["전체", "첫째", "둘째", "공통"])
+with col1:
+    twin_filter = st.selectbox("대상", ["전체", "첫째", "둘째", "공통"])
 
-with f2:
-    category_filter = st.selectbox("분류 필터", ["전체"] + CATEGORY_OPTIONS)
+with col2:
+    category_filter = st.selectbox("분류", ["전체"] + CATEGORY_OPTIONS)
 
-with f3:
-    status_filter = st.selectbox("상태 필터", ["전체", "예정", "완료"])
+with col3:
+    status_filter = st.selectbox("상태", ["전체", "예정", "완료"])
 
-with f4:
-    keyword = st.text_input("검색", placeholder="일정명 / 메모")
+keyword = st.text_input("검색", placeholder="일정명 / 메모")
 
 filtered_df = df.copy()
 
@@ -491,6 +514,61 @@ if not filtered_df.empty:
 tab1, tab2, tab3 = st.tabs(["홈", "달력", "백업"])
 
 with tab1:
+    if "edit_id" in st.session_state:
+        edit_df = df[df["id"] == st.session_state["edit_id"]]
+        if not edit_df.empty:
+            edit_row = edit_df.iloc[0]
+
+            st.subheader("일정 수정")
+            with st.form("edit_form"):
+                edit_title = st.text_input("일정", edit_row["title"])
+
+                edit_category = st.selectbox(
+                    "분류",
+                    CATEGORY_OPTIONS,
+                    index=CATEGORY_OPTIONS.index(edit_row["category"]) if edit_row["category"] in CATEGORY_OPTIONS else 0
+                )
+
+                edit_date = st.date_input(
+                    "날짜",
+                    value=pd.to_datetime(edit_row["event_date"]).date()
+                )
+
+                try:
+                    hh, mm = str(edit_row["event_time"])[:5].split(":")
+                    edit_time_default = dtime(int(hh), int(mm))
+                except Exception:
+                    edit_time_default = dtime(9, 0)
+
+                edit_time = st.time_input("시간", value=edit_time_default)
+                edit_memo = st.text_area("메모", edit_row["memo"] if pd.notnull(edit_row["memo"]) else "")
+
+                e1, e2 = st.columns(2)
+                with e1:
+                    save_edit = st.form_submit_button("수정 저장")
+                with e2:
+                    cancel_edit = st.form_submit_button("수정 취소")
+
+                if save_edit:
+                    if edit_title.strip() == "":
+                        st.error("일정을 입력하세요")
+                    else:
+                        update_schedule(
+                            edit_row["id"],
+                            edit_title.strip(),
+                            edit_category,
+                            edit_date,
+                            edit_time,
+                            edit_memo.strip()
+                        )
+                        del st.session_state["edit_id"]
+                        st.success("수정 완료")
+                        st.rerun()
+
+                if cancel_edit:
+                    del st.session_state["edit_id"]
+                    st.rerun()
+
     if filtered_df.empty:
         st.info("등록된 일정 없음")
     else:
@@ -505,7 +583,7 @@ with tab1:
                 if row["memo"]:
                     st.caption(row["memo"])
 
-                c1, c2, c3 = st.columns(3)
+                c1, c2, c3, c4 = st.columns(4)
 
                 with c1:
                     if row["status"] != "완료":
@@ -522,6 +600,11 @@ with tab1:
                 with c3:
                     if st.button("삭제", key=f"x{row['id']}"):
                         delete_schedule(row["id"])
+                        st.rerun()
+
+                with c4:
+                    if st.button("수정", key=f"edit{row['id']}"):
+                        st.session_state["edit_id"] = row["id"]
                         st.rerun()
 
 with tab2:

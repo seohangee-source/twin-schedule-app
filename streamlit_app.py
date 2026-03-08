@@ -29,9 +29,25 @@ st.markdown("""
 <style>
 [data-testid="stMetricValue"] {
     font-size: 1.2rem;
+    line-height: 1.0;
 }
 [data-testid="stMetricLabel"] {
     font-size: 0.85rem;
+    line-height: 1.0;
+}
+
+@media (max-width: 768px) {
+    [data-testid="stMetricValue"] {
+        font-size: 0.82rem !important;
+        line-height: 1.0 !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.52rem !important;
+        line-height: 1.0 !important;
+    }
+    div[data-testid="metric-container"] {
+        padding: 4px 2px !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -356,8 +372,8 @@ st.markdown(
 )
 
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("전체 일정", f"{total:02d}건")
-m2.metric("오늘 일정", f"{today_count:02d}건")
+m1.metric("전체", f"{total:02d}건")
+m2.metric("오늘", f"{today_count:02d}건")
 m3.metric("예정", f"{open_count:02d}건")
 m4.metric("완료", f"{done_count:02d}건")
 

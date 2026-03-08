@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from datetime import date, time as dtime
 from pathlib import Path
@@ -9,11 +10,19 @@ import streamlit as st
 st.set_page_config(
     page_title="서현우 서지후 일정관리",
     page_icon="📅",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "twin_schedule.db"
+
+# Streamlit Cloud에서는 소스 폴더가 쓰기 불가일 수 있으므로 /tmp 사용
+if os.path.exists("/tmp"):
+    DATA_DIR = Path("/tmp")
+else:
+    DATA_DIR = BASE_DIR
+
+DB_PATH = DATA_DIR / "twin_schedule.db"
 
 CATEGORY_OPTIONS = [
     "가족행사",
@@ -26,6 +35,37 @@ CATEGORY_OPTIONS = [
 
 st.markdown("""
 <style>
+/* ===== 기본 레이아웃 ===== */
+html, body, [class*="css"] {
+    -webkit-text-size-adjust: 100%;
+}
+
+header[data-testid="stHeader"] {
+    height: auto !important;
+}
+
+div[data-testid="stToolbar"] {
+    right: 0.35rem !important;
+}
+
+.block-container {
+    max-width: 100% !important;
+    padding-top: 1.2rem !important;
+    padding-right: 0.8rem !important;
+    padding-left: 0.8rem !important;
+    padding-bottom: 1.2rem !important;
+}
+
+/* ===== 제목 ===== */
+.app-title {
+    margin: 0 0 0.45rem 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #111827;
+}
+
+/* ===== 통계 카드 ===== */
 .stat-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -35,7 +75,7 @@ st.markdown("""
 }
 .stat-box {
     border: 1px solid #e5e7eb;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 8px 6px;
     text-align: center;
     background: #ffffff;
@@ -48,13 +88,43 @@ st.markdown("""
     white-space: nowrap;
 }
 .stat-value {
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.12rem;
+    font-weight: 800;
     color: #111827;
     line-height: 1.0;
     white-space: nowrap;
 }
 
+/* ===== 입력 UI ===== */
+label p {
+    margin-bottom: 0.15rem !important;
+}
+
+div[data-baseweb="select"] > div {
+    min-height: 38px !important;
+}
+
+div[data-testid="stTextInput"] input,
+div[data-testid="stTextArea"] textarea,
+div[data-testid="stDateInput"] input,
+div[data-testid="stTimeInput"] input {
+    font-size: 0.92rem !important;
+}
+
+div[data-testid="stButton"] button,
+div[data-testid="stDownloadButton"] button {
+    width: 100%;
+    border-radius: 10px !important;
+    min-height: 2.45rem !important;
+    font-weight: 700 !important;
+}
+
+/* ===== 일정 카드 ===== */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 12px !important;
+}
+
+/* ===== 달력 ===== */
 .cal-wrap {
     width: 100%;
     overflow-x: auto;
@@ -74,7 +144,7 @@ st.markdown("""
 }
 .cal-table td {
     vertical-align: top;
-    height: 88px;
+    height: 92px;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     background: #ffffff;
@@ -106,19 +176,37 @@ st.markdown("""
 .cal-item-suyuri { background: #fef3c7; color: #92400e; }
 .cal-item-etc { background: #e5e7eb; color: #374151; }
 
+/* ===== 모바일 최적화 ===== */
 @media (max-width: 768px) {
+    .block-container {
+        padding-top: 2.15rem !important;   /* 상단 잘림 방지 핵심 */
+        padding-right: 0.45rem !important;
+        padding-left: 0.45rem !important;
+        padding-bottom: 1rem !important;
+    }
+
+    .app-title {
+        font-size: 1.18rem;
+        margin-top: 0.15rem;
+        margin-bottom: 0.35rem;
+        line-height: 1.15;
+    }
+
     .stat-row {
         gap: 4px;
+        margin-top: 4px;
+        margin-bottom: 8px;
     }
     .stat-box {
         padding: 6px 2px;
+        border-radius: 10px;
     }
     .stat-label {
         font-size: 0.56rem;
         margin-bottom: 2px;
     }
     .stat-value {
-        font-size: 0.88rem;
+        font-size: 0.84rem;
     }
 
     label p {
@@ -136,28 +224,39 @@ st.markdown("""
         padding: 2px 6px !important;
     }
 
-    input {
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stTextArea"] textarea,
+    div[data-testid="stDateInput"] input,
+    div[data-testid="stTimeInput"] input {
         font-size: 0.72rem !important;
     }
 
-    textarea {
-        font-size: 0.72rem !important;
+    div[data-testid="stButton"] button,
+    div[data-testid="stDownloadButton"] button {
+        min-height: 2.1rem !important;
+        font-size: 0.74rem !important;
+        padding: 0.25rem 0.45rem !important;
+    }
+
+    div[data-testid="stTabs"] button {
+        font-size: 0.76rem !important;
+        padding: 0.35rem 0.45rem !important;
     }
 
     .cal-table th {
-        font-size: 0.68rem;
-        padding: 4px 0;
+        font-size: 0.66rem;
+        padding: 3px 0;
     }
     .cal-table td {
-        height: 64px;
+        height: 66px;
         padding: 3px;
     }
     .cal-day {
-        font-size: 0.66rem;
+        font-size: 0.64rem;
         margin-bottom: 2px;
     }
     .cal-item {
-        font-size: 0.52rem;
+        font-size: 0.5rem;
         padding: 1px 3px;
         border-radius: 4px;
         margin-bottom: 2px;
@@ -168,6 +267,7 @@ st.markdown("""
 
 
 def get_conn():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
@@ -200,6 +300,7 @@ def init_db():
     ensure_column(cur, "schedules", "category", "TEXT")
     ensure_column(cur, "schedules", "status", "TEXT", "DEFAULT '예정'")
 
+    # 과거 분류명 정리
     cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='어린이집'")
     cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='유치원'")
 
@@ -267,7 +368,6 @@ def update_status(schedule_id, status):
 def update_schedule(schedule_id, title, category, d, t, memo):
     conn = get_conn()
     cur = conn.cursor()
-
     cur.execute("""
     UPDATE schedules
     SET title=?, category=?, event_date=?, event_time=?, memo=?
@@ -287,10 +387,7 @@ def update_schedule(schedule_id, title, category, d, t, memo):
 def delete_schedule(schedule_id):
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute(
-        "DELETE FROM schedules WHERE id=?",
-        (int(schedule_id),)
-    )
+    cur.execute("DELETE FROM schedules WHERE id=?", (int(schedule_id),))
     conn.commit()
     conn.close()
 
@@ -366,8 +463,8 @@ def render_mobile_calendar(df, month_input):
 
             html.append("</td>")
         html.append("</tr>")
-    html.append("</tbody></table></div>")
 
+    html.append("</tbody></table></div>")
     st.markdown("".join(html), unsafe_allow_html=True)
 
 
@@ -423,11 +520,17 @@ def render_desktop_calendar(df, month_input):
                         st.caption(f"+{len(items)-3}건")
 
 
+# ===== 초기화 =====
 init_db()
 seed_if_empty()
 
-df = load_schedules()
+if "device_mode" not in st.session_state:
+    st.session_state["device_mode"] = "모바일"
 
+if "edit_id" not in st.session_state:
+    st.session_state["edit_id"] = None
+
+df = load_schedules()
 today = date.today()
 
 if df.empty:
@@ -441,10 +544,7 @@ else:
     open_count = len(df[df["status"] == "예정"])
     done_count = len(df[df["status"] == "완료"])
 
-st.markdown(
-    "<h2 style='margin:0; font-size:1.6rem;'>서현우❤️서지후 일정관리</h2>",
-    unsafe_allow_html=True
-)
+st.markdown("<div class='app-title'>서현우❤️서지후 일정관리</div>", unsafe_allow_html=True)
 
 st.markdown(
     f"""
@@ -472,7 +572,7 @@ st.markdown(
 
 with st.expander("빠른 일정 등록", expanded=True):
     with st.form("add_form", clear_on_submit=True):
-        if st.session_state.get("device_mode", "모바일") == "데스크탑":
+        if st.session_state["device_mode"] == "데스크탑":
             c1, c2 = st.columns(2)
             with c1:
                 twin = st.selectbox("대상", ["첫째", "둘째", "공통"])
@@ -483,15 +583,15 @@ with st.expander("빠른 일정 등록", expanded=True):
 
             c3, c4 = st.columns(2)
             with c3:
-                d = st.date_input("날짜")
+                d = st.date_input("날짜", value=today)
             with c4:
-                t = st.time_input("시간")
+                t = st.time_input("시간", value=dtime(9, 0))
         else:
             twin = st.selectbox("대상", ["첫째", "둘째", "공통"])
             category = st.selectbox("분류", CATEGORY_OPTIONS)
             title = st.text_input("일정")
-            d = st.date_input("날짜")
-            t = st.time_input("시간")
+            d = st.date_input("날짜", value=today)
+            t = st.time_input("시간", value=dtime(9, 0))
 
         memo = st.text_area("메모")
         ok = st.form_submit_button("저장")
@@ -516,7 +616,8 @@ st.divider()
 device_mode = st.radio(
     "화면 모드",
     ["모바일", "데스크탑"],
-    horizontal=True
+    horizontal=True,
+    index=0 if st.session_state["device_mode"] == "모바일" else 1
 )
 st.session_state["device_mode"] = device_mode
 
@@ -561,7 +662,7 @@ if not filtered_df.empty:
 tab1, tab2, tab3 = st.tabs(["홈", "달력", "백업"])
 
 with tab1:
-    if "edit_id" in st.session_state:
+    if st.session_state["edit_id"] is not None:
         edit_df = df[df["id"] == st.session_state["edit_id"]]
         if not edit_df.empty:
             edit_row = edit_df.iloc[0]
@@ -588,7 +689,10 @@ with tab1:
                     edit_time_default = dtime(9, 0)
 
                 edit_time = st.time_input("시간", value=edit_time_default)
-                edit_memo = st.text_area("메모", edit_row["memo"] if pd.notnull(edit_row["memo"]) else "")
+                edit_memo = st.text_area(
+                    "메모",
+                    edit_row["memo"] if pd.notnull(edit_row["memo"]) else ""
+                )
 
                 e1, e2 = st.columns(2)
                 with e1:
@@ -608,12 +712,12 @@ with tab1:
                             edit_time,
                             edit_memo.strip()
                         )
-                        del st.session_state["edit_id"]
+                        st.session_state["edit_id"] = None
                         st.success("수정 완료")
                         st.rerun()
 
                 if cancel_edit:
-                    del st.session_state["edit_id"]
+                    st.session_state["edit_id"] = None
                     st.rerun()
 
     if filtered_df.empty:
@@ -662,7 +766,7 @@ with tab2:
     st.subheader("달력")
 
     if device_mode == "데스크탑":
-        c1, c2 = st.columns([1, 1])
+        c1, c2 = st.columns(2)
         with c1:
             month_input = st.date_input("기준월", value=date.today().replace(day=1))
         with c2:

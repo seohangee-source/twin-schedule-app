@@ -26,7 +26,6 @@ CATEGORY_OPTIONS = [
 
 st.markdown("""
 <style>
-/* 상단 요약 */
 .stat-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -56,7 +55,6 @@ st.markdown("""
     white-space: nowrap;
 }
 
-/* 달력 */
 .cal-wrap {
     width: 100%;
     overflow-x: auto;
@@ -101,32 +99,13 @@ st.markdown("""
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.cal-item-family {
-    background: #ffe4ec;
-    color: #9f1239;
-}
-.cal-item-school {
-    background: #e0f2fe;
-    color: #075985;
-}
-.cal-item-hospital {
-    background: #ede9fe;
-    color: #5b21b6;
-}
-.cal-item-jinwol {
-    background: #dcfce7;
-    color: #166534;
-}
-.cal-item-suyuri {
-    background: #fef3c7;
-    color: #92400e;
-}
-.cal-item-etc {
-    background: #e5e7eb;
-    color: #374151;
-}
+.cal-item-family { background: #ffe4ec; color: #9f1239; }
+.cal-item-school { background: #e0f2fe; color: #075985; }
+.cal-item-hospital { background: #ede9fe; color: #5b21b6; }
+.cal-item-jinwol { background: #dcfce7; color: #166534; }
+.cal-item-suyuri { background: #fef3c7; color: #92400e; }
+.cal-item-etc { background: #e5e7eb; color: #374151; }
 
-/* 모바일 최적화 */
 @media (max-width: 768px) {
     .stat-row {
         gap: 4px;
@@ -142,27 +121,15 @@ st.markdown("""
         font-size: 0.88rem;
     }
 
-    /* 필터 1줄 유지 */
-    div[data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-        gap: 4px !important;
-    }
-    div[data-testid="column"] {
-        min-width: 0 !important;
-        flex: 1 1 0 !important;
-    }
-
-    /* 대상/분류/상태 라벨이 화면 밖으로 안 나가게 */
     label p {
         font-size: 0.68rem !important;
-        line-height: 1.0 !important;
+        line-height: 1 !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
         margin-bottom: 2px !important;
     }
 
-    /* 셀렉트박스 */
     div[data-baseweb="select"] > div {
         font-size: 0.72rem !important;
         min-height: 32px !important;
@@ -175,20 +142,6 @@ st.markdown("""
 
     textarea {
         font-size: 0.72rem !important;
-    }
-
-    /* 버튼 4개 한 줄 유지 */
-    .action-row {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 4px;
-        margin-top: 6px;
-    }
-
-    .action-row button {
-        width: 100% !important;
-        font-size: 0.68rem !important;
-        padding: 4px 0 !important;
     }
 
     .cal-table th {
@@ -247,7 +200,6 @@ def init_db():
     ensure_column(cur, "schedules", "category", "TEXT")
     ensure_column(cur, "schedules", "status", "TEXT", "DEFAULT '예정'")
 
-    # 분류 통합/변환
     cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='어린이집'")
     cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='유치원'")
 
@@ -270,7 +222,6 @@ def init_db():
 def add_schedule(twin, title, category, d, t, memo):
     conn = get_conn()
     cur = conn.cursor()
-
     cur.execute("""
     INSERT INTO schedules(
         twin, title, category, event_date, event_time, memo, status
@@ -284,7 +235,6 @@ def add_schedule(twin, title, category, d, t, memo):
         memo,
         "예정"
     ))
-
     conn.commit()
     conn.close()
 
@@ -330,7 +280,6 @@ def update_schedule(schedule_id, title, category, d, t, memo):
         memo,
         int(schedule_id)
     ))
-
     conn.commit()
     conn.close()
 
@@ -523,20 +472,25 @@ st.markdown(
 
 with st.expander("빠른 일정 등록", expanded=True):
     with st.form("add_form", clear_on_submit=True):
-        c1, c2 = st.columns(2)
+        if st.session_state.get("device_mode", "모바일") == "데스크탑":
+            c1, c2 = st.columns(2)
+            with c1:
+                twin = st.selectbox("대상", ["첫째", "둘째", "공통"])
+            with c2:
+                category = st.selectbox("분류", CATEGORY_OPTIONS)
 
-        with c1:
+            title = st.text_input("일정")
+
+            c3, c4 = st.columns(2)
+            with c3:
+                d = st.date_input("날짜")
+            with c4:
+                t = st.time_input("시간")
+        else:
             twin = st.selectbox("대상", ["첫째", "둘째", "공통"])
-
-        with c2:
             category = st.selectbox("분류", CATEGORY_OPTIONS)
-
-        title = st.text_input("일정")
-
-        c3, c4 = st.columns(2)
-        with c3:
+            title = st.text_input("일정")
             d = st.date_input("날짜")
-        with c4:
             t = st.time_input("시간")
 
         memo = st.text_area("메모")
@@ -559,12 +513,24 @@ with st.expander("빠른 일정 등록", expanded=True):
 
 st.divider()
 
-col1, col2, col3 = st.columns(3)
-with col1:
+device_mode = st.radio(
+    "화면 모드",
+    ["모바일", "데스크탑"],
+    horizontal=True
+)
+st.session_state["device_mode"] = device_mode
+
+if device_mode == "데스크탑":
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        twin_filter = st.selectbox("대상", ["전체", "첫째", "둘째", "공통"])
+    with col2:
+        category_filter = st.selectbox("분류", ["전체"] + CATEGORY_OPTIONS)
+    with col3:
+        status_filter = st.selectbox("상태", ["전체", "예정", "완료"])
+else:
     twin_filter = st.selectbox("대상", ["전체", "첫째", "둘째", "공통"])
-with col2:
     category_filter = st.selectbox("분류", ["전체"] + CATEGORY_OPTIONS)
-with col3:
     status_filter = st.selectbox("상태", ["전체", "예정", "완료"])
 
 keyword = st.text_input("검색", placeholder="일정명 / 메모")
@@ -664,8 +630,11 @@ with tab1:
                 if row["memo"]:
                     st.caption(row["memo"])
 
-                st.markdown('<div class="action-row">', unsafe_allow_html=True)
-                c1, c2, c3, c4 = st.columns(4)
+                if device_mode == "데스크탑":
+                    c1, c2, c3, c4 = st.columns(4)
+                else:
+                    c1, c2 = st.columns(2)
+                    c3, c4 = st.columns(2)
 
                 with c1:
                     if row["status"] != "완료":
@@ -688,15 +657,22 @@ with tab1:
                     if st.button("수정", key=f"edit{row['id']}"):
                         st.session_state["edit_id"] = row["id"]
                         st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
     st.subheader("달력")
 
-    c1, c2 = st.columns([1, 1])
-    with c1:
+    if device_mode == "데스크탑":
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            month_input = st.date_input("기준월", value=date.today().replace(day=1))
+        with c2:
+            calendar_view = st.radio(
+                "보기 방식",
+                ["핸드폰 타입", "데스크탑 타입"],
+                horizontal=True
+            )
+    else:
         month_input = st.date_input("기준월", value=date.today().replace(day=1))
-    with c2:
         calendar_view = st.radio(
             "보기 방식",
             ["핸드폰 타입", "데스크탑 타입"],

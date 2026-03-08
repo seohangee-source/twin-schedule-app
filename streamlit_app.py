@@ -26,6 +26,7 @@ CATEGORY_OPTIONS = [
 
 st.markdown("""
 <style>
+/* 상단 요약 */
 .stat-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -55,6 +56,7 @@ st.markdown("""
     white-space: nowrap;
 }
 
+/* 달력 */
 .cal-wrap {
     width: 100%;
     overflow-x: auto;
@@ -92,8 +94,6 @@ st.markdown("""
 .cal-item {
     font-size: 0.62rem;
     line-height: 1.2;
-    background: #eff6ff;
-    color: #1d4ed8;
     border-radius: 6px;
     padding: 2px 4px;
     margin-bottom: 3px;
@@ -126,6 +126,7 @@ st.markdown("""
     color: #374151;
 }
 
+/* 모바일 최적화 */
 @media (max-width: 768px) {
     .stat-row {
         gap: 4px;
@@ -141,24 +142,53 @@ st.markdown("""
         font-size: 0.88rem;
     }
 
+    /* 필터 1줄 유지 */
     div[data-testid="stHorizontalBlock"] {
         flex-wrap: nowrap !important;
-        gap: 0.3rem !important;
+        gap: 4px !important;
     }
     div[data-testid="column"] {
         min-width: 0 !important;
+        flex: 1 1 0 !important;
     }
 
+    /* 대상/분류/상태 라벨이 화면 밖으로 안 나가게 */
     label p {
         font-size: 0.68rem !important;
         line-height: 1.0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin-bottom: 2px !important;
     }
+
+    /* 셀렉트박스 */
     div[data-baseweb="select"] > div {
         font-size: 0.72rem !important;
-        min-height: 2.25rem !important;
+        min-height: 32px !important;
+        padding: 2px 6px !important;
     }
+
     input {
         font-size: 0.72rem !important;
+    }
+
+    textarea {
+        font-size: 0.72rem !important;
+    }
+
+    /* 버튼 4개 한 줄 유지 */
+    .action-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        margin-top: 6px;
+    }
+
+    .action-row button {
+        width: 100% !important;
+        font-size: 0.68rem !important;
+        padding: 4px 0 !important;
     }
 
     .cal-table th {
@@ -217,7 +247,7 @@ def init_db():
     ensure_column(cur, "schedules", "category", "TEXT")
     ensure_column(cur, "schedules", "status", "TEXT", "DEFAULT '예정'")
 
-    # 기존 데이터 통합/정리
+    # 분류 통합/변환
     cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='어린이집'")
     cur.execute("UPDATE schedules SET category='어린이집 및 유치원' WHERE category='유치원'")
 
@@ -356,7 +386,6 @@ def render_mobile_calendar(df, month_input):
     if not df.empty:
         temp = df.copy()
         temp["event_date_only"] = temp["event_date"].dt.date
-
         for _, row in temp.iterrows():
             d = row["event_date_only"]
             item_map.setdefault(d, []).append(row)
@@ -372,10 +401,7 @@ def render_mobile_calendar(df, month_input):
     for week in month_days:
         html.append("<tr>")
         for d in week:
-            td_class = ""
-            if d.month != month:
-                td_class = "cal-other"
-
+            td_class = "cal-other" if d.month != month else ""
             html.append(f"<td class='{td_class}'>")
             html.append(f"<div class='cal-day'>{d.day}</div>")
 
@@ -534,13 +560,10 @@ with st.expander("빠른 일정 등록", expanded=True):
 st.divider()
 
 col1, col2, col3 = st.columns(3)
-
 with col1:
     twin_filter = st.selectbox("대상", ["전체", "첫째", "둘째", "공통"])
-
 with col2:
     category_filter = st.selectbox("분류", ["전체"] + CATEGORY_OPTIONS)
-
 with col3:
     status_filter = st.selectbox("상태", ["전체", "예정", "완료"])
 
@@ -641,6 +664,7 @@ with tab1:
                 if row["memo"]:
                     st.caption(row["memo"])
 
+                st.markdown('<div class="action-row">', unsafe_allow_html=True)
                 c1, c2, c3, c4 = st.columns(4)
 
                 with c1:
@@ -664,6 +688,7 @@ with tab1:
                     if st.button("수정", key=f"edit{row['id']}"):
                         st.session_state["edit_id"] = row["id"]
                         st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
     st.subheader("달력")

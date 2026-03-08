@@ -1,5 +1,6 @@
 import sqlite3
 from pathlib import Path
+from datetime import datetime
 import pandas as pd
 import streamlit as st
 
@@ -140,31 +141,47 @@ if "edit_id" not in st.session_state:
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 0.9rem !important;
+    padding-top: 1.0rem !important;
     padding-bottom: 1.2rem !important;
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
+    padding-left: 0.8rem !important;
+    padding-right: 0.8rem !important;
     max-width: 100% !important;
 }
 
-.section-title {
-    font-size: 1.06rem;
-    font-weight: 700;
-    margin-bottom: 0.65rem;
+.section-box {
+    border: 1px solid #e3e3e3;
+    border-radius: 14px;
+    padding: 14px 12px;
+    margin-bottom: 12px;
+    background: #ffffff;
 }
 
-/* 카드 텍스트 */
+.section-title {
+    font-size: 1.08rem;
+    font-weight: 700;
+    margin-bottom: 0.7rem;
+    color: #222;
+}
+
+.card-box {
+    border: 1px solid #d9d9d9;
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 14px 12px 10px 12px;
+    margin-bottom: 12px;
+}
+
 .card-title {
     font-size: 1.08rem;
     font-weight: 700;
-    line-height: 1.35;
+    line-height: 1.4;
     margin-bottom: 0.55rem;
     color: #222;
 }
 
 .card-line {
     font-size: 0.96rem;
-    line-height: 1.55;
+    line-height: 1.58;
     margin-bottom: 0.18rem;
     color: #333;
     word-break: keep-all;
@@ -174,46 +191,47 @@ st.markdown("""
     font-size: 0.88rem;
     line-height: 1.42;
     color: #777;
-    margin-top: 0.4rem;
-    margin-bottom: 0.55rem;
+    margin-top: 0.45rem;
+    margin-bottom: 0.7rem;
     word-break: keep-all;
 }
 
-/* 카드 내부 버튼행 여백 */
-.card-btn-row {
-    margin-top: 0.35rem;
+.card-button-wrap {
+    margin-top: 0.25rem;
 }
 
-/* 버튼 공통 */
 .stButton > button {
     width: 100% !important;
     min-height: 40px !important;
-    border-radius: 10px !important;
-    font-size: 0.90rem !important;
-    font-weight: 700 !important;
+    border-radius: 11px !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
     white-space: nowrap !important;
-    padding: 0.18rem 0.20rem !important;
+    padding: 0.22rem 0.35rem !important;
 }
 
-/* 열 간격 */
-[data-testid="stHorizontalBlock"] {
-    gap: 0.32rem !important;
-}
-
-/* 입력창 */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 textarea {
     border-radius: 12px !important;
 }
 
-/* 모바일 */
+[data-testid="stHorizontalBlock"] {
+    gap: 0.35rem !important;
+}
+
 @media (max-width: 768px) {
     .block-container {
-        padding-top: 0.7rem !important;
+        padding-top: 0.8rem !important;
         padding-bottom: 1rem !important;
-        padding-left: 0.55rem !important;
-        padding-right: 0.55rem !important;
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+    }
+
+    .section-box {
+        border-radius: 12px;
+        padding: 12px 10px;
+        margin-bottom: 10px;
     }
 
     .section-title {
@@ -221,39 +239,38 @@ textarea {
         margin-bottom: 0.55rem;
     }
 
+    .card-box {
+        border-radius: 12px;
+        padding: 12px 10px 9px 10px;
+        margin-bottom: 10px;
+    }
+
     .card-title {
-        font-size: 0.98rem;
-        margin-bottom: 0.42rem;
+        font-size: 1rem;
+        margin-bottom: 0.45rem;
     }
 
     .card-line {
-        font-size: 0.88rem;
-        line-height: 1.48;
-        margin-bottom: 0.14rem;
+        font-size: 0.9rem;
+        line-height: 1.52;
     }
 
     .card-memo {
-        font-size: 0.80rem;
-        line-height: 1.35;
-        margin-top: 0.28rem;
-        margin-bottom: 0.42rem;
-    }
-
-    .card-btn-row {
-        margin-top: 0.25rem;
+        font-size: 0.83rem;
+        line-height: 1.38;
+        margin-top: 0.3rem;
+        margin-bottom: 0.55rem;
     }
 
     .stButton > button {
-        min-height: 34px !important;
-        border-radius: 9px !important;
-        font-size: 0.72rem !important;
-        font-weight: 700 !important;
-        padding: 0.05rem 0.08rem !important;
-        letter-spacing: -0.02em !important;
+        min-height: 36px !important;
+        border-radius: 10px !important;
+        font-size: 0.78rem !important;
+        padding: 0.08rem 0.16rem !important;
     }
 
     [data-testid="stHorizontalBlock"] {
-        gap: 0.18rem !important;
+        gap: 0.22rem !important;
     }
 }
 </style>
@@ -270,7 +287,9 @@ tab1, tab2, tab3 = st.tabs(["홈", "달력", "백업"])
 # 홈
 # ---------------------------------
 with tab1:
-    with st.container(border=True):
+    # 일정 추가 복구
+    with st.container():
+        st.markdown('<div class="section-box">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">일정 추가</div>', unsafe_allow_html=True)
 
         add_title = st.text_input("일정명", placeholder="예: 소아과 검진", key="add_title")
@@ -308,6 +327,9 @@ with tab1:
                 st.success("일정을 추가했습니다.")
                 st.rerun()
 
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # 상태 / 검색 복구
     status_filter = st.selectbox("상태", ["전체"] + STATUS_OPTIONS, index=0, key="status_filter")
     search_text = st.text_input("검색", placeholder="일정명 / 메모", key="search_text")
 
@@ -328,39 +350,42 @@ with tab1:
         st.info("표시할 일정이 없습니다.")
     else:
         for _, row in df.iterrows():
-            with st.container(border=True):
-                st.markdown(
-                    f"""
-                    <div class="card-title">일정 : {row['title']}</div>
-                    <div class="card-line"><b>대상 :</b> {row['target'] if pd.notna(row['target']) else ''}</div>
-                    <div class="card-line"><b>분류 :</b> {row['category'] if pd.notna(row['category']) else ''}</div>
-                    <div class="card-line"><b>날짜 :</b> {row['schedule_dt'] if pd.notna(row['schedule_dt']) else ''}</div>
-                    <div class="card-line"><b>상태 :</b> {row['status'] if pd.notna(row['status']) else ''}</div>
-                    <div class="card-memo">{row['memo'] if pd.notna(row['memo']) else ''}</div>
-                    """,
-                    unsafe_allow_html=True
-                )
+            st.markdown('<div class="card-box">', unsafe_allow_html=True)
 
-                st.markdown('<div class="card-btn-row"></div>', unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class="card-title">일정 : {row['title']}</div>
+                <div class="card-line"><b>대상 :</b> {row['target'] if pd.notna(row['target']) else ''}</div>
+                <div class="card-line"><b>분류 :</b> {row['category'] if pd.notna(row['category']) else ''}</div>
+                <div class="card-line"><b>날짜 :</b> {row['schedule_dt'] if pd.notna(row['schedule_dt']) else ''}</div>
+                <div class="card-line"><b>상태 :</b> {row['status'] if pd.notna(row['status']) else ''}</div>
+                <div class="card-memo">{row['memo'] if pd.notna(row['memo']) else ''}</div>
+                """,
+                unsafe_allow_html=True
+            )
 
-                b1, b2, b3 = st.columns([1, 1, 1], gap="small")
+            st.markdown('<div class="card-button-wrap">', unsafe_allow_html=True)
+            b1, b2, b3 = st.columns(3, gap="small")
 
-                with b1:
-                    if st.button("완료", key=f"done_{row['id']}", use_container_width=True):
-                        mark_done(row["id"])
-                        st.rerun()
+            with b1:
+                if st.button("완료", key=f"done_{row['id']}", use_container_width=True):
+                    mark_done(row["id"])
+                    st.rerun()
 
-                with b2:
-                    if st.button("삭제", key=f"delete_{row['id']}", use_container_width=True):
-                        delete_row(row["id"])
-                        if st.session_state.edit_id == row["id"]:
-                            st.session_state.edit_id = None
-                        st.rerun()
+            with b2:
+                if st.button("삭제", key=f"delete_{row['id']}", use_container_width=True):
+                    delete_row(row["id"])
+                    if st.session_state.edit_id == row["id"]:
+                        st.session_state.edit_id = None
+                    st.rerun()
 
-                with b3:
-                    if st.button("수정", key=f"edit_{row['id']}", use_container_width=True):
-                        st.session_state.edit_id = row["id"]
-                        st.rerun()
+            with b3:
+                if st.button("수정", key=f"edit_{row['id']}", use_container_width=True):
+                    st.session_state.edit_id = row["id"]
+                    st.rerun()
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
             if st.session_state.edit_id == row["id"]:
                 with st.container(border=True):
